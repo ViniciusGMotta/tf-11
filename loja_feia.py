@@ -69,15 +69,40 @@ class Status:
             return "cancelado"
 
 
-class Cliente:
-    def __init__(self, nome, cpf, email, rua, cidade, cep, tipo_cliente):
+class Perfil:
+    def __init__(self, nome, tipo_cliente):
         self.nome = nome
+        self.tipo_cliente = tipo_cliente      # "N" normal, "V" vip, "F" funcionario
+
+
+class Contato:
+    def __init__(self, cpf, email):
         self.cpf = cpf
         self.email = email
-        self.rua = rua
+
+
+class Identidade:
+    def __init__(self, perfil, contato):
+        self.perfil = perfil
+        self.contato = contato
+
+
+class Localidade:
+    def __init__(self, cidade, cep):
         self.cidade = cidade
         self.cep = cep
-        self.tipo_cliente = tipo_cliente      # "N" normal, "V" vip, "F" funcionario
+
+
+class Endereco:
+    def __init__(self, rua, localidade):
+        self.rua = rua
+        self.localidade = localidade
+
+
+class Cliente:
+    def __init__(self, identidade, endereco):
+        self.identidade = identidade
+        self.endereco = endereco
 
 
 class Produto:
@@ -107,18 +132,28 @@ class ItensDoPedido:
             print("  ", item[1], "x", item[0].nome, "= R$ %s" % item[0].valor_unitario.multiplicar(item[1]).texto())
 
 
-class Pedido:
+class CabecalhoDoPedido:
     def __init__(self, numero, cliente):
         self.numero = numero                  # numero do pedido
         self.cliente = cliente                # aponta para UM cliente
-        self.itens = ItensDoPedido()
-        self.status = Status("A")
+
+
+class Andamento:
+    def __init__(self, itens, status):
+        self.itens = itens
+        self.status = status
+
+
+class Pedido:
+    def __init__(self, numero, cliente):
+        self.cabecalho = CabecalhoDoPedido(numero, cliente)
+        self.andamento = Andamento(ItensDoPedido(), Status("A"))
 
     def get_status(self):
-        return self.status
+        return self.andamento.status
 
     def set_status(self, valor):
-        self.status = valor
+        self.andamento.status = valor
 
 
 class Pedidos:
@@ -167,7 +202,10 @@ def valida(email, cpf, cep):
 
 
 def novo_pedido(numero, cliente):
-    resultado = valida(cliente.email, cliente.cpf, cliente.cep)
+    email = cliente.identidade.contato.email
+    cpf = cliente.identidade.contato.cpf
+    cep = cliente.endereco.localidade.cep
+    resultado = valida(email, cpf, cep)
     if resultado != "ok":
         print("pedido", numero, "recusado:", resultado)
         return None
@@ -178,11 +216,11 @@ def novo_pedido(numero, cliente):
 
 
 def adicionar_item(pedido, produto, quantidade):
-    pedido.itens.adicionar(produto, quantidade)
+    pedido.andamento.itens.adicionar(produto, quantidade)
 
 
 def total(pedido):
-    return pedido.itens.total()
+    return pedido.andamento.itens.total()
 
 
 def calcular_desconto(tipo_cliente, total_do_pedido):
@@ -196,12 +234,13 @@ def calcular_desconto(tipo_cliente, total_do_pedido):
 
 
 def valor_a_pagar(pedido):
-    return total(pedido).subtrair(calcular_desconto(pedido.cliente.tipo_cliente, total(pedido)))
+    tipo_cliente = pedido.cabecalho.cliente.identidade.perfil.tipo_cliente
+    return total(pedido).subtrair(calcular_desconto(tipo_cliente, total(pedido)))
 
 
 def pagar(pedido):
     if pedido.get_status().esta_aberto():
-        if pedido.itens.tem_itens():
+        if pedido.andamento.itens.tem_itens():
             pedido.set_status(Status("P"))
             return True
         else:
@@ -219,11 +258,15 @@ def cancelar(pedido):
 
 
 def imprimir_pedido(pedido):
-    print("Pedido", pedido.numero, "-", pedido.cliente.nome, "-", pedido.cliente.cidade)
+    cliente = pedido.cabecalho.cliente
+    nome = cliente.identidade.perfil.nome
+    cidade = cliente.endereco.localidade.cidade
+    tipo_cliente = cliente.identidade.perfil.tipo_cliente
+    print("Pedido", pedido.cabecalho.numero, "-", nome, "-", cidade)
     print("  status:", pedido.get_status().texto())
-    pedido.itens.imprimir()
-    if pedido.itens.tem_itens():
-        print("  total: R$ %s | desconto: R$ %s | a pagar: R$ %s" % (total(pedido).texto(), calcular_desconto(pedido.cliente.tipo_cliente, total(pedido)).texto(), valor_a_pagar(pedido).texto()))
+    pedido.andamento.itens.imprimir()
+    if pedido.andamento.itens.tem_itens():
+        print("  total: R$ %s | desconto: R$ %s | a pagar: R$ %s" % (total(pedido).texto(), calcular_desconto(tipo_cliente, total(pedido)).texto(), valor_a_pagar(pedido).texto()))
 
 
 # --- o roteiro da loja (o TF mantem esta saida identica) -----------------------
@@ -232,13 +275,13 @@ caneta = Produto("Caneta", Dinheiro(2.5))
 livro = Produto("Livro", Dinheiro(89.5))
 fone = Produto("Fone", Dinheiro(60.0))
 
-ana = Cliente("Ana Souza", Cpf("12345678901"), Email("ana@mail.com"), "Rua das Flores, 10", "Sorocaba", Cep("18010000"), "V")
-bruno = Cliente("Bruno Lima", Cpf("123"), Email("bruno@mail.com"), "Av. Central, 200", "Votorantim", Cep("18110000"), "N")
-carla = Cliente("Carla Dias", Cpf("98765432100"), Email("carla.mail.com"), "Rua do Sol, 55", "Sorocaba", Cep("18020000"), "F")
-diego = Cliente("Diego Rocha", Cpf("11122233344"), Email("diego@mail.com"), "Rua Nova, 7", "Itu", Cep("13300000"), "N")
-eva = Cliente("Eva Nunes", Cpf("55566677788"), Email("eva@mail.com"), "Alameda Azul, 1", "Itu", Cep("13300001"), "F")
-fabio = Cliente("Fabio Costa", Cpf("99988877766"), Email("fabio@mail.com"), "Rua Velha, 3", "Itu", Cep("123"), "N")
-gil = Cliente("Gil Alves", Cpf("44455566677"), Email("gil@mail.com"), "Rua do Meio, 9", "Sorocaba", Cep("18030000"), "N")
+ana = Cliente(Identidade(Perfil("Ana Souza", "V"), Contato(Cpf("12345678901"), Email("ana@mail.com"))), Endereco("Rua das Flores, 10", Localidade("Sorocaba", Cep("18010000"))))
+bruno = Cliente(Identidade(Perfil("Bruno Lima", "N"), Contato(Cpf("123"), Email("bruno@mail.com"))), Endereco("Av. Central, 200", Localidade("Votorantim", Cep("18110000"))))
+carla = Cliente(Identidade(Perfil("Carla Dias", "F"), Contato(Cpf("98765432100"), Email("carla.mail.com"))), Endereco("Rua do Sol, 55", Localidade("Sorocaba", Cep("18020000"))))
+diego = Cliente(Identidade(Perfil("Diego Rocha", "N"), Contato(Cpf("11122233344"), Email("diego@mail.com"))), Endereco("Rua Nova, 7", Localidade("Itu", Cep("13300000"))))
+eva = Cliente(Identidade(Perfil("Eva Nunes", "F"), Contato(Cpf("55566677788"), Email("eva@mail.com"))), Endereco("Alameda Azul, 1", Localidade("Itu", Cep("13300001"))))
+fabio = Cliente(Identidade(Perfil("Fabio Costa", "N"), Contato(Cpf("99988877766"), Email("fabio@mail.com"))), Endereco("Rua Velha, 3", Localidade("Itu", Cep("123"))))
+gil = Cliente(Identidade(Perfil("Gil Alves", "N"), Contato(Cpf("44455566677"), Email("gil@mail.com"))), Endereco("Rua do Meio, 9", Localidade("Sorocaba", Cep("18030000"))))
 
 pedido_ana_1 = novo_pedido(1, ana)
 adicionar_item(pedido_ana_1, caderno, 2)
