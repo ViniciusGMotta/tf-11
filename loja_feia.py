@@ -16,11 +16,17 @@ class Cliente:
         self.tipo_cliente = tipo_cliente      # "N" normal, "V" vip, "F" funcionario
 
 
+class Produto:
+    def __init__(self, nome, valor_unitario):
+        self.nome = nome
+        self.valor_unitario = valor_unitario
+
+
 class Pedido:
     def __init__(self, numero, cliente):
         self.numero = numero                  # numero do pedido
-        self.cliente = cliente                # agora aponta para UM cliente
-        self.itens = []                       # cada item e uma lista: [produto, quantidade, valor_unitario]
+        self.cliente = cliente                # aponta para UM cliente
+        self.itens = []                       # cada item e uma lista: [produto, quantidade]
         self.status = "A"                     # A = aberto, P = pago, C = cancelado
 
     def get_status(self):
@@ -57,14 +63,14 @@ def novo_pedido(numero, cliente):
         return pedido
 
 
-def adicionar_item(pedido, produto, quantidade, valor_unitario):
-    pedido.itens.append([produto, quantidade, valor_unitario])
+def adicionar_item(pedido, produto, quantidade):
+    pedido.itens.append([produto, quantidade])
 
 
 def total(pedido):
     soma = 0
     for item in pedido.itens:
-        soma = soma + item[1] * item[2]
+        soma = soma + item[1] * item[0].valor_unitario
     return soma
 
 
@@ -115,7 +121,7 @@ def relatorio():
         print("Pedido", pedido.numero, "-", pedido.cliente.nome, "-", pedido.cliente.cidade)
         print("  status:", status_por_extenso(pedido.get_status()))
         for item in pedido.itens:
-            print("  ", item[1], "x", item[0], "= R$ %.2f" % (item[1] * item[2]))
+            print("  ", item[1], "x", item[0].nome, "= R$ %.2f" % (item[1] * item[0].valor_unitario))
         if len(pedido.itens) > 0:
             print("  total: R$ %.2f | desconto: R$ %.2f | a pagar: R$ %.2f" % (total(pedido), calcular_desconto(pedido.cliente.tipo_cliente, total(pedido)), valor_a_pagar(pedido)))
 
@@ -137,6 +143,11 @@ def quantidade_de_abertos():
 
 
 # --- o roteiro da loja (o TF mantem esta saida identica) -----------------------
+caderno = Produto("Caderno", 15.5)
+caneta = Produto("Caneta", 2.5)
+livro = Produto("Livro", 89.5)
+fone = Produto("Fone", 60.0)
+
 ana = Cliente("Ana Souza", "12345678901", "ana@mail.com", "Rua das Flores, 10", "Sorocaba", "18010000", "V")
 bruno = Cliente("Bruno Lima", "123", "bruno@mail.com", "Av. Central, 200", "Votorantim", "18110000", "N")
 carla = Cliente("Carla Dias", "98765432100", "carla.mail.com", "Rua do Sol, 55", "Sorocaba", "18020000", "F")
@@ -146,25 +157,25 @@ fabio = Cliente("Fabio Costa", "99988877766", "fabio@mail.com", "Rua Velha, 3", 
 gil = Cliente("Gil Alves", "44455566677", "gil@mail.com", "Rua do Meio, 9", "Sorocaba", "18030000", "N")
 
 pedido_ana_1 = novo_pedido(1, ana)
-adicionar_item(pedido_ana_1, "Caderno", 2, 15.5)
-adicionar_item(pedido_ana_1, "Caneta", 5, 2.5)
+adicionar_item(pedido_ana_1, caderno, 2)
+adicionar_item(pedido_ana_1, caneta, 5)
 
 novo_pedido(2, bruno)
 
 pedido_ana_3 = novo_pedido(3, ana)
-adicionar_item(pedido_ana_3, "Livro", 1, 89.5)
+adicionar_item(pedido_ana_3, livro, 1)
 
 novo_pedido(4, carla)
 
 pedido_diego = novo_pedido(5, diego)
 
 pedido_eva = novo_pedido(6, eva)
-adicionar_item(pedido_eva, "Fone", 1, 60.0)
+adicionar_item(pedido_eva, fone, 1)
 
 novo_pedido(7, fabio)
 
 pedido_gil = novo_pedido(8, gil)
-adicionar_item(pedido_gil, "Fone", 2, 60.0)
+adicionar_item(pedido_gil, fone, 2)
 
 print("pagar 1:", pagar(pedido_ana_1))
 print("pagar 3:", pagar(pedido_ana_3))
