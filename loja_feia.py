@@ -32,6 +32,26 @@ class Cep:
         return len(self.valor) == 8
 
 
+class Dinheiro:
+    def __init__(self, valor):
+        self.valor = valor
+
+    def somar(self, outro):
+        return Dinheiro(self.valor + outro.valor)
+
+    def subtrair(self, outro):
+        return Dinheiro(self.valor - outro.valor)
+
+    def multiplicar(self, quantidade):
+        return Dinheiro(self.valor * quantidade)
+
+    def percentual(self, taxa):
+        return Dinheiro(self.valor * taxa)
+
+    def texto(self):
+        return "%.2f" % self.valor
+
+
 class Cliente:
     def __init__(self, nome, cpf, email, rua, cidade, cep, tipo_cliente):
         self.nome = nome
@@ -95,24 +115,24 @@ def adicionar_item(pedido, produto, quantidade):
 
 
 def total(pedido):
-    soma = 0
+    soma = Dinheiro(0)
     for item in pedido.itens:
-        soma = soma + item[1] * item[0].valor_unitario
+        soma = soma.somar(item[0].valor_unitario.multiplicar(item[1]))
     return soma
 
 
 def calcular_desconto(tipo_cliente, total_do_pedido):
     if tipo_cliente == "V":
-        desconto = total_do_pedido * 0.10
+        desconto = total_do_pedido.percentual(0.10)
     elif tipo_cliente == "F":
-        desconto = total_do_pedido * 0.20
+        desconto = total_do_pedido.percentual(0.20)
     else:
-        desconto = 0
+        desconto = Dinheiro(0)
     return desconto
 
 
 def valor_a_pagar(pedido):
-    return total(pedido) - calcular_desconto(pedido.cliente.tipo_cliente, total(pedido))
+    return total(pedido).subtrair(calcular_desconto(pedido.cliente.tipo_cliente, total(pedido)))
 
 
 def pagar(pedido):
@@ -148,16 +168,16 @@ def relatorio():
         print("Pedido", pedido.numero, "-", pedido.cliente.nome, "-", pedido.cliente.cidade)
         print("  status:", status_por_extenso(pedido.get_status()))
         for item in pedido.itens:
-            print("  ", item[1], "x", item[0].nome, "= R$ %.2f" % (item[1] * item[0].valor_unitario))
+            print("  ", item[1], "x", item[0].nome, "= R$ %s" % item[0].valor_unitario.multiplicar(item[1]).texto())
         if len(pedido.itens) > 0:
-            print("  total: R$ %.2f | desconto: R$ %.2f | a pagar: R$ %.2f" % (total(pedido), calcular_desconto(pedido.cliente.tipo_cliente, total(pedido)), valor_a_pagar(pedido)))
+            print("  total: R$ %s | desconto: R$ %s | a pagar: R$ %s" % (total(pedido).texto(), calcular_desconto(pedido.cliente.tipo_cliente, total(pedido)).texto(), valor_a_pagar(pedido).texto()))
 
 
 def arrecadado():
-    soma = 0
+    soma = Dinheiro(0)
     for pedido in pedidos:
         if pedido.get_status() == "P":
-            soma = soma + valor_a_pagar(pedido)
+            soma = soma.somar(valor_a_pagar(pedido))
     return soma
 
 
@@ -170,10 +190,10 @@ def quantidade_de_abertos():
 
 
 # --- o roteiro da loja (o TF mantem esta saida identica) -----------------------
-caderno = Produto("Caderno", 15.5)
-caneta = Produto("Caneta", 2.5)
-livro = Produto("Livro", 89.5)
-fone = Produto("Fone", 60.0)
+caderno = Produto("Caderno", Dinheiro(15.5))
+caneta = Produto("Caneta", Dinheiro(2.5))
+livro = Produto("Livro", Dinheiro(89.5))
+fone = Produto("Fone", Dinheiro(60.0))
 
 ana = Cliente("Ana Souza", Cpf("12345678901"), Email("ana@mail.com"), "Rua das Flores, 10", "Sorocaba", Cep("18010000"), "V")
 bruno = Cliente("Bruno Lima", Cpf("123"), Email("bruno@mail.com"), "Av. Central, 200", "Votorantim", Cep("18110000"), "N")
@@ -212,5 +232,5 @@ print("cancelar 5:", cancelar(pedido_diego))
 print("cancelar 1:", cancelar(pedido_ana_1))
 
 relatorio()
-print("arrecadado: R$ %.2f" % arrecadado())
+print("arrecadado: R$ %s" % arrecadado().texto())
 print("abertos:", quantidade_de_abertos())
