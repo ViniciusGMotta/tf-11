@@ -5,16 +5,21 @@
 pedidos = []                  # todos os pedidos da loja: lista solta, global
 
 
-class Pedido:
-    def __init__(self, numero, cliente_nome, cliente_cpf, cliente_email, rua, cliente_cidade, cliente_cep, tipo_cliente):
-        self.numero = numero                  # numero do pedido
-        self.cliente_nome = cliente_nome      # os dados do cliente se repetem em CADA pedido dele
-        self.cliente_cpf = cliente_cpf
-        self.cliente_email = cliente_email
+class Cliente:
+    def __init__(self, nome, cpf, email, rua, cidade, cep, tipo_cliente):
+        self.nome = nome
+        self.cpf = cpf
+        self.email = email
         self.rua = rua
-        self.cliente_cidade = cliente_cidade
-        self.cliente_cep = cliente_cep
+        self.cidade = cidade
+        self.cep = cep
         self.tipo_cliente = tipo_cliente      # "N" normal, "V" vip, "F" funcionario
+
+
+class Pedido:
+    def __init__(self, numero, cliente):
+        self.numero = numero                  # numero do pedido
+        self.cliente = cliente                # agora aponta para UM cliente
         self.itens = []                       # cada item e uma lista: [produto, quantidade, valor_unitario]
         self.status = "A"                     # A = aberto, P = pago, C = cancelado
 
@@ -41,13 +46,13 @@ def valida(cliente_email, cliente_cpf, cliente_cep):
         return "email vazio"
 
 
-def novo_pedido(numero, cliente_nome, cliente_cpf, cliente_email, rua, cliente_cidade, cliente_cep, tipo_cliente):
-    resultado = valida(cliente_email, cliente_cpf, cliente_cep)
+def novo_pedido(numero, cliente):
+    resultado = valida(cliente.email, cliente.cpf, cliente.cep)
     if resultado != "ok":
         print("pedido", numero, "recusado:", resultado)
         return None
     else:
-        pedido = Pedido(numero, cliente_nome, cliente_cpf, cliente_email, rua, cliente_cidade, cliente_cep, tipo_cliente)
+        pedido = Pedido(numero, cliente)
         pedidos.append(pedido)
         return pedido
 
@@ -74,7 +79,7 @@ def calcular_desconto(tipo_cliente, total_do_pedido):
 
 
 def valor_a_pagar(pedido):
-    return total(pedido) - calcular_desconto(pedido.tipo_cliente, total(pedido))
+    return total(pedido) - calcular_desconto(pedido.cliente.tipo_cliente, total(pedido))
 
 
 def pagar(pedido):
@@ -107,12 +112,12 @@ def status_por_extenso(status):
 
 def relatorio():
     for pedido in pedidos:
-        print("Pedido", pedido.numero, "-", pedido.cliente_nome, "-", pedido.cliente_cidade)
+        print("Pedido", pedido.numero, "-", pedido.cliente.nome, "-", pedido.cliente.cidade)
         print("  status:", status_por_extenso(pedido.get_status()))
         for item in pedido.itens:
             print("  ", item[1], "x", item[0], "= R$ %.2f" % (item[1] * item[2]))
         if len(pedido.itens) > 0:
-            print("  total: R$ %.2f | desconto: R$ %.2f | a pagar: R$ %.2f" % (total(pedido), calcular_desconto(pedido.tipo_cliente, total(pedido)), valor_a_pagar(pedido)))
+            print("  total: R$ %.2f | desconto: R$ %.2f | a pagar: R$ %.2f" % (total(pedido), calcular_desconto(pedido.cliente.tipo_cliente, total(pedido)), valor_a_pagar(pedido)))
 
 
 def arrecadado():
@@ -132,25 +137,33 @@ def quantidade_de_abertos():
 
 
 # --- o roteiro da loja (o TF mantem esta saida identica) -----------------------
-pedido_ana_1 = novo_pedido(1, "Ana Souza", "12345678901", "ana@mail.com", "Rua das Flores, 10", "Sorocaba", "18010000", "V")
+ana = Cliente("Ana Souza", "12345678901", "ana@mail.com", "Rua das Flores, 10", "Sorocaba", "18010000", "V")
+bruno = Cliente("Bruno Lima", "123", "bruno@mail.com", "Av. Central, 200", "Votorantim", "18110000", "N")
+carla = Cliente("Carla Dias", "98765432100", "carla.mail.com", "Rua do Sol, 55", "Sorocaba", "18020000", "F")
+diego = Cliente("Diego Rocha", "11122233344", "diego@mail.com", "Rua Nova, 7", "Itu", "13300000", "N")
+eva = Cliente("Eva Nunes", "55566677788", "eva@mail.com", "Alameda Azul, 1", "Itu", "13300001", "F")
+fabio = Cliente("Fabio Costa", "99988877766", "fabio@mail.com", "Rua Velha, 3", "Itu", "123", "N")
+gil = Cliente("Gil Alves", "44455566677", "gil@mail.com", "Rua do Meio, 9", "Sorocaba", "18030000", "N")
+
+pedido_ana_1 = novo_pedido(1, ana)
 adicionar_item(pedido_ana_1, "Caderno", 2, 15.5)
 adicionar_item(pedido_ana_1, "Caneta", 5, 2.5)
 
-novo_pedido(2, "Bruno Lima", "123", "bruno@mail.com", "Av. Central, 200", "Votorantim", "18110000", "N")
+novo_pedido(2, bruno)
 
-pedido_ana_3 = novo_pedido(3, "Ana Souza", "12345678901", "ana@mail.com", "Rua das Flores, 10", "Sorocaba", "18010000", "V")
+pedido_ana_3 = novo_pedido(3, ana)
 adicionar_item(pedido_ana_3, "Livro", 1, 89.5)
 
-novo_pedido(4, "Carla Dias", "98765432100", "carla.mail.com", "Rua do Sol, 55", "Sorocaba", "18020000", "F")
+novo_pedido(4, carla)
 
-pedido_diego = novo_pedido(5, "Diego Rocha", "11122233344", "diego@mail.com", "Rua Nova, 7", "Itu", "13300000", "N")
+pedido_diego = novo_pedido(5, diego)
 
-pedido_eva = novo_pedido(6, "Eva Nunes", "55566677788", "eva@mail.com", "Alameda Azul, 1", "Itu", "13300001", "F")
+pedido_eva = novo_pedido(6, eva)
 adicionar_item(pedido_eva, "Fone", 1, 60.0)
 
-novo_pedido(7, "Fabio Costa", "99988877766", "fabio@mail.com", "Rua Velha, 3", "Itu", "123", "N")
+novo_pedido(7, fabio)
 
-pedido_gil = novo_pedido(8, "Gil Alves", "44455566677", "gil@mail.com", "Rua do Meio, 9", "Sorocaba", "18030000", "N")
+pedido_gil = novo_pedido(8, gil)
 adicionar_item(pedido_gil, "Fone", 2, 60.0)
 
 print("pagar 1:", pagar(pedido_ana_1))
