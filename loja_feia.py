@@ -2,8 +2,6 @@
 # Object Calisthenics. A missao e consertar SEM mudar o que ele imprime.
 # Rodar no terminal: python3 loja_feia.py
 
-pedidos = []                  # todos os pedidos da loja: lista solta, global
-
 
 class Cpf:
     def __init__(self, valor):
@@ -88,11 +86,32 @@ class Produto:
         self.valor_unitario = valor_unitario
 
 
+class ItensDoPedido:
+    def __init__(self):
+        self.lista = []                       # cada item e uma lista: [produto, quantidade]
+
+    def adicionar(self, produto, quantidade):
+        self.lista.append([produto, quantidade])
+
+    def tem_itens(self):
+        return len(self.lista) > 0
+
+    def total(self):
+        soma = Dinheiro(0)
+        for item in self.lista:
+            soma = soma.somar(item[0].valor_unitario.multiplicar(item[1]))
+        return soma
+
+    def imprimir(self):
+        for item in self.lista:
+            print("  ", item[1], "x", item[0].nome, "= R$ %s" % item[0].valor_unitario.multiplicar(item[1]).texto())
+
+
 class Pedido:
     def __init__(self, numero, cliente):
         self.numero = numero                  # numero do pedido
         self.cliente = cliente                # aponta para UM cliente
-        self.itens = []                       # cada item e uma lista: [produto, quantidade]
+        self.itens = ItensDoPedido()
         self.status = Status("A")
 
     def get_status(self):
@@ -100,6 +119,35 @@ class Pedido:
 
     def set_status(self, valor):
         self.status = valor
+
+
+class Pedidos:
+    def __init__(self):
+        self.lista = []
+
+    def adicionar(self, pedido):
+        self.lista.append(pedido)
+
+    def arrecadado(self):
+        soma = Dinheiro(0)
+        for pedido in self.lista:
+            if pedido.get_status().esta_pago():
+                soma = soma.somar(valor_a_pagar(pedido))
+        return soma
+
+    def quantidade_de_abertos(self):
+        contagem = 0
+        for pedido in self.lista:
+            if pedido.get_status().esta_aberto():
+                contagem = contagem + 1
+        return contagem
+
+    def relatorio(self):
+        for pedido in self.lista:
+            imprimir_pedido(pedido)
+
+
+pedidos = Pedidos()           # todos os pedidos da loja
 
 
 def valida(email, cpf, cep):
@@ -125,19 +173,16 @@ def novo_pedido(numero, cliente):
         return None
     else:
         pedido = Pedido(numero, cliente)
-        pedidos.append(pedido)
+        pedidos.adicionar(pedido)
         return pedido
 
 
 def adicionar_item(pedido, produto, quantidade):
-    pedido.itens.append([produto, quantidade])
+    pedido.itens.adicionar(produto, quantidade)
 
 
 def total(pedido):
-    soma = Dinheiro(0)
-    for item in pedido.itens:
-        soma = soma.somar(item[0].valor_unitario.multiplicar(item[1]))
-    return soma
+    return pedido.itens.total()
 
 
 def calcular_desconto(tipo_cliente, total_do_pedido):
@@ -156,7 +201,7 @@ def valor_a_pagar(pedido):
 
 def pagar(pedido):
     if pedido.get_status().esta_aberto():
-        if len(pedido.itens) > 0:
+        if pedido.itens.tem_itens():
             pedido.set_status(Status("P"))
             return True
         else:
@@ -173,30 +218,12 @@ def cancelar(pedido):
         return False
 
 
-def relatorio():
-    for pedido in pedidos:
-        print("Pedido", pedido.numero, "-", pedido.cliente.nome, "-", pedido.cliente.cidade)
-        print("  status:", pedido.get_status().texto())
-        for item in pedido.itens:
-            print("  ", item[1], "x", item[0].nome, "= R$ %s" % item[0].valor_unitario.multiplicar(item[1]).texto())
-        if len(pedido.itens) > 0:
-            print("  total: R$ %s | desconto: R$ %s | a pagar: R$ %s" % (total(pedido).texto(), calcular_desconto(pedido.cliente.tipo_cliente, total(pedido)).texto(), valor_a_pagar(pedido).texto()))
-
-
-def arrecadado():
-    soma = Dinheiro(0)
-    for pedido in pedidos:
-        if pedido.get_status().esta_pago():
-            soma = soma.somar(valor_a_pagar(pedido))
-    return soma
-
-
-def quantidade_de_abertos():
-    contagem = 0
-    for pedido in pedidos:
-        if pedido.get_status().esta_aberto():
-            contagem = contagem + 1
-    return contagem
+def imprimir_pedido(pedido):
+    print("Pedido", pedido.numero, "-", pedido.cliente.nome, "-", pedido.cliente.cidade)
+    print("  status:", pedido.get_status().texto())
+    pedido.itens.imprimir()
+    if pedido.itens.tem_itens():
+        print("  total: R$ %s | desconto: R$ %s | a pagar: R$ %s" % (total(pedido).texto(), calcular_desconto(pedido.cliente.tipo_cliente, total(pedido)).texto(), valor_a_pagar(pedido).texto()))
 
 
 # --- o roteiro da loja (o TF mantem esta saida identica) -----------------------
@@ -241,6 +268,6 @@ print("pagar 6:", pagar(pedido_eva))
 print("cancelar 5:", cancelar(pedido_diego))
 print("cancelar 1:", cancelar(pedido_ana_1))
 
-relatorio()
-print("arrecadado: R$ %s" % arrecadado().texto())
-print("abertos:", quantidade_de_abertos())
+pedidos.relatorio()
+print("arrecadado: R$ %s" % pedidos.arrecadado().texto())
+print("abertos:", pedidos.quantidade_de_abertos())
