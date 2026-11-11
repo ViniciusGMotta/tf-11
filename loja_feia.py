@@ -52,6 +52,25 @@ class Dinheiro:
         return "%.2f" % self.valor
 
 
+class Status:
+    def __init__(self, valor):
+        self.valor = valor                    # A = aberto, P = pago, C = cancelado
+
+    def esta_aberto(self):
+        return self.valor == "A"
+
+    def esta_pago(self):
+        return self.valor == "P"
+
+    def texto(self):
+        if self.valor == "A":
+            return "aberto"
+        elif self.valor == "P":
+            return "pago"
+        else:
+            return "cancelado"
+
+
 class Cliente:
     def __init__(self, nome, cpf, email, rua, cidade, cep, tipo_cliente):
         self.nome = nome
@@ -74,7 +93,7 @@ class Pedido:
         self.numero = numero                  # numero do pedido
         self.cliente = cliente                # aponta para UM cliente
         self.itens = []                       # cada item e uma lista: [produto, quantidade]
-        self.status = "A"                     # A = aberto, P = pago, C = cancelado
+        self.status = Status("A")
 
     def get_status(self):
         return self.status
@@ -136,9 +155,9 @@ def valor_a_pagar(pedido):
 
 
 def pagar(pedido):
-    if pedido.get_status() == "A":
+    if pedido.get_status().esta_aberto():
         if len(pedido.itens) > 0:
-            pedido.set_status("P")
+            pedido.set_status(Status("P"))
             return True
         else:
             return False
@@ -147,26 +166,17 @@ def pagar(pedido):
 
 
 def cancelar(pedido):
-    if pedido.get_status() == "A":
-        pedido.set_status("C")
+    if pedido.get_status().esta_aberto():
+        pedido.set_status(Status("C"))
         return True
     else:
         return False
 
 
-def status_por_extenso(status):
-    if status == "A":
-        return "aberto"
-    elif status == "P":
-        return "pago"
-    else:
-        return "cancelado"
-
-
 def relatorio():
     for pedido in pedidos:
         print("Pedido", pedido.numero, "-", pedido.cliente.nome, "-", pedido.cliente.cidade)
-        print("  status:", status_por_extenso(pedido.get_status()))
+        print("  status:", pedido.get_status().texto())
         for item in pedido.itens:
             print("  ", item[1], "x", item[0].nome, "= R$ %s" % item[0].valor_unitario.multiplicar(item[1]).texto())
         if len(pedido.itens) > 0:
@@ -176,7 +186,7 @@ def relatorio():
 def arrecadado():
     soma = Dinheiro(0)
     for pedido in pedidos:
-        if pedido.get_status() == "P":
+        if pedido.get_status().esta_pago():
             soma = soma.somar(valor_a_pagar(pedido))
     return soma
 
@@ -184,7 +194,7 @@ def arrecadado():
 def quantidade_de_abertos():
     contagem = 0
     for pedido in pedidos:
-        if pedido.get_status() == "A":
+        if pedido.get_status().esta_aberto():
             contagem = contagem + 1
     return contagem
 
