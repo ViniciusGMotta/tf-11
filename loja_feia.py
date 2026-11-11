@@ -5,6 +5,33 @@
 pedidos = []                  # todos os pedidos da loja: lista solta, global
 
 
+class Cpf:
+    def __init__(self, valor):
+        self.valor = valor
+
+    def valido(self):
+        return len(self.valor) == 11
+
+
+class Email:
+    def __init__(self, valor):
+        self.valor = valor
+
+    def tem_conteudo(self):
+        return len(self.valor) > 0
+
+    def tem_arroba(self):
+        return "@" in self.valor
+
+
+class Cep:
+    def __init__(self, valor):
+        self.valor = valor
+
+    def valido(self):
+        return len(self.valor) == 8
+
+
 class Cliente:
     def __init__(self, nome, cpf, email, rua, cidade, cep, tipo_cliente):
         self.nome = nome
@@ -36,11 +63,11 @@ class Pedido:
         self.status = valor
 
 
-def valida(cliente_email, cliente_cpf, cliente_cep):
-    if len(cliente_email) > 0:
-        if "@" in cliente_email:
-            if len(cliente_cpf) == 11:
-                if len(cliente_cep) == 8:
+def valida(email, cpf, cep):
+    if email.tem_conteudo():
+        if email.tem_arroba():
+            if cpf.valido():
+                if cep.valido():
                     return "ok"
                 else:
                     return "cep invalido"
@@ -148,13 +175,13 @@ caneta = Produto("Caneta", 2.5)
 livro = Produto("Livro", 89.5)
 fone = Produto("Fone", 60.0)
 
-ana = Cliente("Ana Souza", "12345678901", "ana@mail.com", "Rua das Flores, 10", "Sorocaba", "18010000", "V")
-bruno = Cliente("Bruno Lima", "123", "bruno@mail.com", "Av. Central, 200", "Votorantim", "18110000", "N")
-carla = Cliente("Carla Dias", "98765432100", "carla.mail.com", "Rua do Sol, 55", "Sorocaba", "18020000", "F")
-diego = Cliente("Diego Rocha", "11122233344", "diego@mail.com", "Rua Nova, 7", "Itu", "13300000", "N")
-eva = Cliente("Eva Nunes", "55566677788", "eva@mail.com", "Alameda Azul, 1", "Itu", "13300001", "F")
-fabio = Cliente("Fabio Costa", "99988877766", "fabio@mail.com", "Rua Velha, 3", "Itu", "123", "N")
-gil = Cliente("Gil Alves", "44455566677", "gil@mail.com", "Rua do Meio, 9", "Sorocaba", "18030000", "N")
+ana = Cliente("Ana Souza", Cpf("12345678901"), Email("ana@mail.com"), "Rua das Flores, 10", "Sorocaba", Cep("18010000"), "V")
+bruno = Cliente("Bruno Lima", Cpf("123"), Email("bruno@mail.com"), "Av. Central, 200", "Votorantim", Cep("18110000"), "N")
+carla = Cliente("Carla Dias", Cpf("98765432100"), Email("carla.mail.com"), "Rua do Sol, 55", "Sorocaba", Cep("18020000"), "F")
+diego = Cliente("Diego Rocha", Cpf("11122233344"), Email("diego@mail.com"), "Rua Nova, 7", "Itu", Cep("13300000"), "N")
+eva = Cliente("Eva Nunes", Cpf("55566677788"), Email("eva@mail.com"), "Alameda Azul, 1", "Itu", Cep("13300001"), "F")
+fabio = Cliente("Fabio Costa", Cpf("99988877766"), Email("fabio@mail.com"), "Rua Velha, 3", "Itu", Cep("123"), "N")
+gil = Cliente("Gil Alves", Cpf("44455566677"), Email("gil@mail.com"), "Rua do Meio, 9", "Sorocaba", Cep("18030000"), "N")
 
 pedido_ana_1 = novo_pedido(1, ana)
 adicionar_item(pedido_ana_1, caderno, 2)
