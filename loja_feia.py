@@ -50,41 +50,64 @@ class Dinheiro:
         return "%.2f" % self.valor
 
 
-class Status:
-    def __init__(self, valor):
-        self.valor = valor                    # A = aberto, P = pago, C = cancelado
-
+class StatusAberto:
     def esta_aberto(self):
-        return self.valor == "A"
+        return True
 
     def esta_pago(self):
-        return self.valor == "P"
+        return False
 
     def texto(self):
-        if self.valor == "A":
-            return "aberto"
-        elif self.valor == "P":
-            return "pago"
-        else:
-            return "cancelado"
+        return "aberto"
+
+
+class StatusPago:
+    def esta_aberto(self):
+        return False
+
+    def esta_pago(self):
+        return True
+
+    def texto(self):
+        return "pago"
+
+
+class StatusCancelado:
+    def esta_aberto(self):
+        return False
+
+    def esta_pago(self):
+        return False
+
+    def texto(self):
+        return "cancelado"
+
+
+class TipoNormal:
+    def desconto_sobre(self, total):
+        return Dinheiro(0)
+
+
+class TipoVip:
+    def desconto_sobre(self, total):
+        return total.percentual(0.10)
+
+
+class TipoFuncionario:
+    def desconto_sobre(self, total):
+        return total.percentual(0.20)
 
 
 class Perfil:
     def __init__(self, nome, tipo_cliente):
         self.nome = nome
-        self.tipo_cliente = tipo_cliente      # "N" normal, "V" vip, "F" funcionario
+        self.tipo_cliente = tipo_cliente      # TipoNormal, TipoVip ou TipoFuncionario
 
     def nome_texto(self):
         return self.nome
 
     def desconto_sobre(self, total):
-        if self.tipo_cliente == "V":
-            desconto = total.percentual(0.10)
-        elif self.tipo_cliente == "F":
-            desconto = total.percentual(0.20)
-        else:
-            desconto = Dinheiro(0)
-        return desconto
+        return self.tipo_cliente.desconto_sobre(total)
 
 
 class Contato:
@@ -93,16 +116,13 @@ class Contato:
         self.email = email
 
     def validar(self):
-        if self.email.tem_conteudo():
-            if self.email.tem_arroba():
-                if self.cpf.valido():
-                    return "ok"
-                else:
-                    return "cpf invalido"
-            else:
-                return "email invalido"
-        else:
+        if not self.email.tem_conteudo():
             return "email vazio"
+        if not self.email.tem_arroba():
+            return "email invalido"
+        if not self.cpf.valido():
+            return "cpf invalido"
+        return "ok"
 
 
 class Identidade:
@@ -126,10 +146,9 @@ class Localidade:
         self.cep = cep
 
     def validar(self):
-        if self.cep.valido():
-            return "ok"
-        else:
+        if not self.cep.valido():
             return "cep invalido"
+        return "ok"
 
     def cidade_texto(self):
         return self.cidade
@@ -156,8 +175,7 @@ class Cliente:
         resultado = self.identidade.validar()
         if resultado != "ok":
             return resultado
-        else:
-            return self.endereco.validar()
+        return self.endereco.validar()
 
     def nome_texto(self):
         return self.identidade.nome_texto()
@@ -248,21 +266,18 @@ class Andamento:
         return self.status.esta_pago()
 
     def pagar(self):
-        if self.status.esta_aberto():
-            if self.itens.tem_itens():
-                self.status = Status("P")
-                return True
-            else:
-                return False
-        else:
+        if not self.status.esta_aberto():
             return False
+        if not self.itens.tem_itens():
+            return False
+        self.status = StatusPago()
+        return True
 
     def cancelar(self):
-        if self.status.esta_aberto():
-            self.status = Status("C")
-            return True
-        else:
+        if not self.status.esta_aberto():
             return False
+        self.status = StatusCancelado()
+        return True
 
     def imprimir(self):
         print("  status:", self.status.texto())
@@ -272,7 +287,7 @@ class Andamento:
 class Pedido:
     def __init__(self, numero, cliente):
         self.cabecalho = CabecalhoDoPedido(numero, cliente)
-        self.andamento = Andamento(ItensDoPedido(), Status("A"))
+        self.andamento = Andamento(ItensDoPedido(), StatusAberto())
 
     def adicionar_item(self, produto, quantidade):
         self.andamento.adicionar_item(produto, quantidade)
@@ -348,10 +363,9 @@ def novo_pedido(numero, cliente):
     if resultado != "ok":
         print("pedido", numero, "recusado:", resultado)
         return None
-    else:
-        pedido = Pedido(numero, cliente)
-        pedidos.adicionar(pedido)
-        return pedido
+    pedido = Pedido(numero, cliente)
+    pedidos.adicionar(pedido)
+    return pedido
 
 
 # --- o roteiro da loja (o TF mantem esta saida identica) -----------------------
@@ -360,13 +374,13 @@ caneta = Produto("Caneta", Dinheiro(2.5))
 livro = Produto("Livro", Dinheiro(89.5))
 fone = Produto("Fone", Dinheiro(60.0))
 
-ana = Cliente(Identidade(Perfil("Ana Souza", "V"), Contato(Cpf("12345678901"), Email("ana@mail.com"))), Endereco("Rua das Flores, 10", Localidade("Sorocaba", Cep("18010000"))))
-bruno = Cliente(Identidade(Perfil("Bruno Lima", "N"), Contato(Cpf("123"), Email("bruno@mail.com"))), Endereco("Av. Central, 200", Localidade("Votorantim", Cep("18110000"))))
-carla = Cliente(Identidade(Perfil("Carla Dias", "F"), Contato(Cpf("98765432100"), Email("carla.mail.com"))), Endereco("Rua do Sol, 55", Localidade("Sorocaba", Cep("18020000"))))
-diego = Cliente(Identidade(Perfil("Diego Rocha", "N"), Contato(Cpf("11122233344"), Email("diego@mail.com"))), Endereco("Rua Nova, 7", Localidade("Itu", Cep("13300000"))))
-eva = Cliente(Identidade(Perfil("Eva Nunes", "F"), Contato(Cpf("55566677788"), Email("eva@mail.com"))), Endereco("Alameda Azul, 1", Localidade("Itu", Cep("13300001"))))
-fabio = Cliente(Identidade(Perfil("Fabio Costa", "N"), Contato(Cpf("99988877766"), Email("fabio@mail.com"))), Endereco("Rua Velha, 3", Localidade("Itu", Cep("123"))))
-gil = Cliente(Identidade(Perfil("Gil Alves", "N"), Contato(Cpf("44455566677"), Email("gil@mail.com"))), Endereco("Rua do Meio, 9", Localidade("Sorocaba", Cep("18030000"))))
+ana = Cliente(Identidade(Perfil("Ana Souza", TipoVip()), Contato(Cpf("12345678901"), Email("ana@mail.com"))), Endereco("Rua das Flores, 10", Localidade("Sorocaba", Cep("18010000"))))
+bruno = Cliente(Identidade(Perfil("Bruno Lima", TipoNormal()), Contato(Cpf("123"), Email("bruno@mail.com"))), Endereco("Av. Central, 200", Localidade("Votorantim", Cep("18110000"))))
+carla = Cliente(Identidade(Perfil("Carla Dias", TipoFuncionario()), Contato(Cpf("98765432100"), Email("carla.mail.com"))), Endereco("Rua do Sol, 55", Localidade("Sorocaba", Cep("18020000"))))
+diego = Cliente(Identidade(Perfil("Diego Rocha", TipoNormal()), Contato(Cpf("11122233344"), Email("diego@mail.com"))), Endereco("Rua Nova, 7", Localidade("Itu", Cep("13300000"))))
+eva = Cliente(Identidade(Perfil("Eva Nunes", TipoFuncionario()), Contato(Cpf("55566677788"), Email("eva@mail.com"))), Endereco("Alameda Azul, 1", Localidade("Itu", Cep("13300001"))))
+fabio = Cliente(Identidade(Perfil("Fabio Costa", TipoNormal()), Contato(Cpf("99988877766"), Email("fabio@mail.com"))), Endereco("Rua Velha, 3", Localidade("Itu", Cep("123"))))
+gil = Cliente(Identidade(Perfil("Gil Alves", TipoNormal()), Contato(Cpf("44455566677"), Email("gil@mail.com"))), Endereco("Rua do Meio, 9", Localidade("Sorocaba", Cep("18030000"))))
 
 pedido_ana_1 = novo_pedido(1, ana)
 pedido_ana_1.adicionar_item(caderno, 2)
